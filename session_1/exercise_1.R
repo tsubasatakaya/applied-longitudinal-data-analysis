@@ -30,8 +30,8 @@ data <- data |>
   mutate(time = case_when(event == 1 ~ age_1,
                           event == 0 ~ age_2,
                           .default = NA)) |> 
-  mutate(gender = as.factor(case_when(gndr == 1 ~ "male",
-                                      gndr == 2 ~ "female",
+  mutate(gender = as.factor(case_when(gndr == 1 ~ "Male",
+                                      gndr == 2 ~ "Female",
                                       .default = NA))) |> 
   mutate(cohort = cut(yrbrn,
                       breaks = c(1919, 1945, 1960, 1980, 1999),
@@ -46,9 +46,9 @@ ggsurvplot(fit_gender, data = data, surv.median.line = "hv")
 fit_cohort <- survfit(Surv(data$time, data$event) ~ data$cohort)
 ggsurvplot(fit_cohort, data = data,)
 
-
-
-
+fit_gender_cohort <- survfit(Surv(time, event) ~ gender + cohort, data = data)
+ggsurvplot_facet(fit_gender_cohort, data = data, facet.by = "gender",
+                 short.panel.labs = TRUE)
 
 
 
