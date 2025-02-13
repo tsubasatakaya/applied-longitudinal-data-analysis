@@ -2,6 +2,8 @@ library(tidyverse)
 library(haven)
 library(survival)
 library(survminer)
+library(broom)
+library(gt)
 
 lfp_data <- read_csv("data/oecd_labor_force_participation_rate.csv",)
 lfp_data |> 
@@ -51,7 +53,30 @@ ggsurvplot_facet(fit_gender_cohort, data = data, facet.by = "gender",
                  short.panel.labs = TRUE)
 
 
+gender_cohort_fitted <- broom::tidy(fit_gender_cohort)
 
+estimate_gender_cohort_20 <- gender_cohort_fitted |> 
+  filter(time == 20) |> 
+  mutate(gender = str_extract(strata, "(?<=gender=)\\w+"),
+         cohort = str_extract(strata, "(?<=cohort=)\\d{4}-\\d{4}")) |> 
+  select(estimate, gender, cohort) |> 
+  pivot_wider(names_from = gender, values_from = estimate) |> 
+  mutate(diff = Female - Male)
+t <- estimate_gender_cohort_20 |> 
+  rename("Cohort" = cohort,
+         "Difference" = diff) |>
+  mutate(across(where(is.numeric), \(x) round(x, 3))) |> 
+  gt::gt()
+gtsave(t, "demo.docx")
+
+
+estimate_gender_cohort_28 <- gender_cohort_fitted |> 
+  filter(time == 28) |> 
+  mutate(gender = str_extract(strata, "(?<=gender=)\\w+"),
+         cohort = str_extract(strata, "(?<=cohort=)\\d{4}-\\d{4}")) |> 
+  select(estimate, gender, cohort) |> 
+  pivot_wider(names_from = gender, values_from = estimate) |> 
+  mutate(diff = Female - Male)
 
 
 
