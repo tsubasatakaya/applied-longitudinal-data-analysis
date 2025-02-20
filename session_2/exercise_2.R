@@ -74,25 +74,26 @@ data <- data |>
   mutate(time = case_when(is.na(maryr) ~ inwyys - yrbrn,
                           .default = maryr - yrbrn))
 fit_marriage <- survfit(Surv(time, event) ~ gender + cohort, data = data)
-ggsurvplot_facet(fit_marriage, data = data,
-                 facet.by = "gender",
-                 short.panel.labs = TRUE,
-                 title = "Figure 1: Survival function of marriage by gender and cohort",
-                 xlab = "Age",
-                 xlim = c(15, 70),
-                 palette = c("#E69F00", "#56B4E9", "#009E73"),
-                 censor.shape = "|",
-                 censor.size = 3,
-                 legend.title = "Cohort: ",
-                 legend.labs = c("1930-1949", "1950-1969", "1970-1989"),
-) +
+fig_1 <- ggsurvplot_facet(fit_marriage, data = data,
+                          facet.by = "gender",
+                          short.panel.labs = TRUE,
+                          title = paste0("Figure 1: Survival function of marriage ",
+                                         "by gender and cohort, France"),
+                          xlab = "Age",
+                          xlim = c(15, 70),
+                          palette = c("#E69F00", "#56B4E9", "#009E73"),
+                          censor.shape = "|",
+                          censor.size = 3,
+                          legend.title = "Cohort: ",
+                          legend.labs = c("1930-1949", "1950-1969", "1970-1989"),
+                          ) + 
   theme_bw() +
   theme(
     text = element_text(size = 14),
     strip.text = element_text(size = 14, face = "bold"),
     legend.position = "bottom"
   )
-
+ggsave(file.path(output_path, "figure_1.png"), fig_1, width = 8, height = 6)
 
 # b
 data_young <- data |> 
