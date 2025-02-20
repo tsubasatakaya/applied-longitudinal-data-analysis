@@ -2,9 +2,7 @@ library(tidyverse)
 library(haven)
 library(survival)
 library(survminer)
-library(broom)
 library(gt)
-library(glue)
 
 output_path <- "session_2/output"
 base_data <- read_dta("data/ESS9e03_2.dta") |> 
@@ -19,46 +17,6 @@ base_data <- read_dta("data/ESS9e03_2.dta") |>
                       labels = c("1930-1949", "1950-1969", "1970-1989"),
                       include.lowest = TRUE,)
          )
-  
-#-------------------------------------------------------------------
-# Codebook
-# lvpntyr: year of leaving home for 2 months or more
-# pdempyr: year first started in paied employment or apprenticeship 
-# maryr: year first married
-# fcldbrn: year first child was born
-#-------------------------------------------------------------------
-
-data <- base_data |> 
-  select(fcldbrn, bthcld, yrbrn, cntry, inwyys, gndr) |> 
-  filter(!is.na(bthcld))
-
-data <- data |> 
-  mutate(event = case_when(bthcld == 2 ~ 0,
-                           .default = 1)) |>
-  mutate(time = case_when(is.na(fcldbrn) ~ inwyys - yrbrn,
-                          .default = fcldbrn - yrbrn)) |> 
-  mutate(gender = as.factor(case_when(gndr == 1 ~ "Male",
-                                      gndr == 2 ~ "Female",
-                                      .default = NA))) |>
-  mutate(cohort = cut(yrbrn,
-                      breaks = c(1929, 1949, 1969, 1989),
-                      labels = c("1930-1949", "1950-1969", "1970-1989"),
-                      include.lowest = TRUE,)
-         ) |> 
-  filter(time < 60)
-
-
-fit <- survfit(Surv(time, event) ~ gender + cohort, data = data)
-fit
-
-ggsurvplot_facet(fit, data = data,
-                 facet.by = "gender",
-                 short.panel.labs = TRUE,
-                 # title = "Figure 4: Survival probability by age and cohort",
-                 # xlab = "Age"
-)
-
-
 
 #-------------------------------------------------------------------
 # Exercise 2.3
@@ -114,12 +72,35 @@ fig_2 <- ggsurvplot(fit_young, data = data_young,
     text = element_text(size = 14),
     legend.position = "bottom"
   )
-ggsave(file.path(output_path, "figure_2.png"), fig_2, width = 8, height = 6)
+ggsave(file.path(output_path, "figure_2.png"), fig_2, width = 10, height = 6)
 
-survdiff(Surv(time, event) ~ gender, data = data_young)
-
-
-
+logrank_res <- survdiff(Surv(time, event) ~ gender, data = data_young)
+logrank_res_df <- tibble(
+  Gender = c("Female", "Male"),
+  N = logrank_res$n,
+  Observed = logrank_res$obs,
+  Expected = logrank_res$exp,
+  `(O-E)^2/E` = (logrank_res$obs - logrank_res$exp)^2 / logrank_res$exp,
+  `(O-E)^2/V` = (logrank_res$obs - logrank_res$exp)^2 / diag(logrank_res$var),
+)
+tab_1 <- logrank_res_df |> 
+  gt() |> 
+  tab_header(
+    title = "Table 1: Log-Rank test for gender difference in first job - 1970-1989 cohorts"
+  ) |> 
+  fmt_number(
+    columns = c(Observed, Expected, `(O-E)^2/E`, `(O-E)^2/V`),
+    decimals = 2) |> 
+  tab_source_note(
+    source_note = paste0("Chi-sq: ", round(logrank_res$chisq, 2),
+                         " | degrees of freedom: ", "1",
+                         " | p-value: ", round(logrank_res$pvalue, 4)
+                         )
+  ) |> 
+  tab_options(
+    table.border.top.style = "none"
+  )
+gtsave(tab_1, file.path(output_path, "table_1.html"))  
 
 
 
