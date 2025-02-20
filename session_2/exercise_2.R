@@ -61,26 +61,26 @@ ggsurvplot_facet(fit, data = data,
 
 
 #-------------------------------------------------------------------
-# Exercise 2.3: marriage
+# Exercise 2.3
 #-------------------------------------------------------------------
 # a
 data <- base_data |> 
-  select(maryr, evmar, yrbrn, cntry, inwyys, gender, cohort) |> 
-  filter(!is.na(evmar))
+  select(pdempyr, evpdemp, yrbrn, cntry, inwyys, gender, cohort) |> 
+  filter(!is.na(evpdemp))
 
 data <- data |> 
-  mutate(event = case_when(evmar == 2 ~ 0,
+  mutate(event = case_when(evpdemp == 2 ~ 0,
                            .default = 1)) |> 
-  mutate(time = case_when(is.na(maryr) ~ inwyys - yrbrn,
-                          .default = maryr - yrbrn))
-fit_marriage <- survfit(Surv(time, event) ~ gender + cohort, data = data)
-fig_1 <- ggsurvplot_facet(fit_marriage, data = data,
+  mutate(time = case_when(is.na(pdempyr) ~ inwyys - yrbrn,
+                          .default = pdempyr - yrbrn))
+fit_job <- survfit(Surv(time, event) ~ gender + cohort, data = data)
+fig_1 <- ggsurvplot_facet(fit_job, data = data,
                           facet.by = "gender",
                           short.panel.labs = TRUE,
-                          title = paste0("Figure 1: Survival function of marriage ",
+                          title = paste0("Figure 1: Survival function of first job ",
                                          "by gender and cohort - France"),
                           xlab = "Age",
-                          xlim = c(15, 70),
+                          xlim = c(15, 50),
                           palette = c("#E69F00", "#56B4E9", "#009E73"),
                           censor.shape = "|",
                           censor.size = 3,
@@ -101,7 +101,7 @@ data_young <- data |>
 
 fit_young <- survfit(Surv(time, event) ~ gender, data = data_young)
 fig_2 <- ggsurvplot(fit_young, data = data_young,
-                    title = paste0("Figure 2: Survival function of marriage ",
+                    title = paste0("Figure 2: Survival function of first job ",
                                    "of the 1970-1989 cohorts by gender - France"),
                     xlab = "Age",
                     xlim = c(15, 50),
