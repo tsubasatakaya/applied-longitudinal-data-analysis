@@ -78,7 +78,7 @@ fig_1 <- ggsurvplot_facet(fit_marriage, data = data,
                           facet.by = "gender",
                           short.panel.labs = TRUE,
                           title = paste0("Figure 1: Survival function of marriage ",
-                                         "by gender and cohort, France"),
+                                         "by gender and cohort - France"),
                           xlab = "Age",
                           xlim = c(15, 70),
                           palette = c("#E69F00", "#56B4E9", "#009E73"),
@@ -97,12 +97,24 @@ ggsave(file.path(output_path, "figure_1.png"), fig_1, width = 8, height = 6)
 
 # b
 data_young <- data |> 
-  filter(cohort == "1930-1949") |> 
-  filter(time < 60)
+  filter(cohort == "1970-1989")
 
 fit_young <- survfit(Surv(time, event) ~ gender, data = data_young)
-ggsurvplot(fit_young, data = data_young)
-
+fig_2 <- ggsurvplot(fit_young, data = data_young,
+                    title = paste0("Figure 2: Survival function of marriage ",
+                                   "of the 1970-1989 cohorts by gender - France"),
+                    xlab = "Age",
+                    xlim = c(15, 50),
+                    censor.shape = "|",
+                    censor.size = 3,
+                    legend.title = "Gender: ",
+                    legend.labs = c("Female", "Male"))$plot +
+  theme_bw() +
+  theme(
+    text = element_text(size = 14),
+    legend.position = "bottom"
+  )
+ggsave(file.path(output_path, "figure_2.png"), fig_2, width = 8, height = 6)
 
 survdiff(Surv(time, event) ~ gender, data = data_young)
 
