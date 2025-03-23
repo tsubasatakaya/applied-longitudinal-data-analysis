@@ -66,29 +66,40 @@ data_processed <- data |>
   mutate(fam_transition = factor(fam_transition, levels = transition_type)) |> 
   filter(!(fam_transition %in% c("coh_to_LAT", "married_to_LAT", "married_to_coh")))
 
-table1(~ fam_transition | factor(SEX), data = data_processed |> drop_na(SEX))
+data_cleaned <- data_processed |> 
+  ungroup() |> 
+  mutate(sex = case_when(SEX == 1 ~ "Male",
+                         SEX == 2 ~ "Female",
+                         .default = NA)) |> 
+  mutate(age = case_when(AGE >= 25 & AGE <=29 ~ "25-29",
+                         AGE >= 30 & AGE <= 39 ~ "30-39",
+                         AGE >= 40 & AGE <= 51 ~ "40-51")) |> 
+  mutate(has_kid = case_when(nkids > 0 ~ 1,
+                             nkids == 0 ~ 0,
+                             .default = NA)) |> 
+  mutate(log_income = log(hhincoecd)) |> 
+  rename(edu = "CASMIN",
+         depression = "DEPRESSION",
+         life_sat = "sat6") |> 
+  mutate(across(c(age, sex, edu), factor)) |> 
+  drop_na(id, inty, wave, sex, life_sat, fam_transition, 
+          edu, age, has_kid, log_income, depression)
+
+table1(~ fam_transition + life_sat + edu + age + has_kid +
+         log_income + depression | sex, data = data_cleaned)
 
 
 
 ################################################
 # Model fitting
 ################################################
-# CASMIN (education factor)
-# hhincoecd (income)
-# DEPRESSION
-# AGE (continuous -> category)
-# EMP (categorical)
-# nkids (continuous -> dummy)
-
-
-
-
-
-
-
-
-
-
+model_1 <- plm(life_sat ~ fam_transition  + edu + age + has_kid +
+                 log_income,
+               data = data_cleaned,
+               index = c("id", "wave"),
+               model = "within",
+               effect = "twoways")
+modelsummary(model_1)
 
 
 
