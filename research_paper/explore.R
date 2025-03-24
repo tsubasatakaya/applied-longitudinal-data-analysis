@@ -94,7 +94,7 @@ table1(~ fam_transition + life_sat + edu + age + has_kid +
 # Model fitting
 ################################################
 model_1 <- plm(life_sat ~ fam_transition  + edu + age + has_kid +
-                 log_income,
+                 log_income + depression,
                data = data_cleaned,
                index = c("id", "wave"),
                model = "within",
