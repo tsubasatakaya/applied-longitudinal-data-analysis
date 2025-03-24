@@ -96,7 +96,13 @@ summary(dynamic_twfe_model)
 library(did)
 did_data <-  coh_data |> 
   drop_na(id, inty, life_sat, period, group, edu, log_income, has_kid,
-          depression)
+          depression) |> 
+  group_by(group, period) |> 
+  mutate(group_period_count = n()) |> 
+  ungroup() |> 
+  filter(group_period_count >= 5)
+
+table1(~ factor(period) | factor(group), data = did_data)
 
 did_data |> 
   filter(group > 0) |> 
@@ -107,7 +113,7 @@ attgt_model <- att_gt(yname = "life_sat",
                       tname = "period",
                       idname = "id",
                       gname = "group",
-                      # xformla = ~ age + edu + log_income + has_kid + depression,
+                      xformla = ~ log_income + depression,
                       data = did_data,
                       control_group = "notyettreated",
                       allow_unbalanced_panel = TRUE)
