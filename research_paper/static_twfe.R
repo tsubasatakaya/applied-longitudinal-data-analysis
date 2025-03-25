@@ -1,5 +1,4 @@
 source("research_paper/setup.R")
-library(marginaleffects)
 ################################################
 # Data preparation
 ################################################
@@ -40,7 +39,7 @@ data_cleaned <- data_filtered |>
                              .default = NA)) |> 
   mutate(partnership = case_when(FAM_NOW == 0 ~ "Single",
                                  FAM_NOW == 1 ~ "LAT",
-                                 FAM_NOW == 2 ~ "Cohabitation",
+                                 FAM_NOW == 2 ~ "Cohabiting",
                                  FAM_NOW == 3 ~ "Married",
                                  .default = NA)) |> 
   mutate(log_income = log(hhincoecd)) |> 
@@ -51,7 +50,7 @@ data_cleaned <- data_filtered |>
          emp = factor(emp, levels = c("Not working", "Part-time", "Full-time")),
          edu = factor(edu, levels = c("In school", "Low", "Medium", "High")),
          partnership = factor(partnership, levels = c("Single", "LAT", 
-                                                      "Cohabitation", "Married")),
+                                                      "Cohabiting", "Married")),
          has_kid = factor(has_kid, levels = c("No kid", "Has kid"))) |> 
   drop_na(id, inty, wave, sex, life_sat, partnership, emp,
           edu, age, has_kid, log_income, depression) |> 
@@ -113,9 +112,9 @@ coef_data <- tidy(static_twfe_male, conf.int = TRUE) |>
   bind_rows(tidy(static_twfe_female, conf.int = TRUE) |> 
               mutate(sex = "female")) |> 
   mutate(term = str_replace(term, "partnership", "")) |> 
-  filter(term %in% c("LAT", "Cohabitation", "Married")) |> 
+  filter(term %in% c("LAT", "Cohabiting", "Married")) |> 
   bind_rows(single_coef) |> 
-  mutate(term = factor(term, levels = c("Single (ref.)", "LAT", "Cohabitation", "Married")))
+  mutate(term = factor(term, levels = c("Single (ref.)", "LAT", "Cohabiting", "Married")))
 
 sta_twfe_coef_plot <- ggplot(coef_data, 
                              aes(x = term)) +
@@ -148,7 +147,7 @@ ggsave(file.path(output_path, "static_twfe_coef_plot.png"),
 ################################################
 cm <- c(
   "partnershipLAT" = "LAT",
-  "partnershipCohabitation" = "Cohabitation",
+  "partnershipCohabiting" = "Cohabiting",
   "partnershipMarried" = "Married",
   "eduLow" = "Low",
   "eduMedium" = "Medium",
@@ -237,12 +236,12 @@ for (i in seq_along(sex_vec)) {
   partial_slope_data <- bind_rows(partial_slope_data, slope_data)
 }
 partial_slope_data <- partial_slope_data |> 
-  mutate(partnership = factor(partnership, levels = c("LAT", "Cohabitation", "Married")))
+  mutate(partnership = factor(partnership, levels = c("LAT", "Cohabiting", "Married")))
 
 
 sta_twfe_duration_slope_plot <- partial_slope_data |> 
   mutate(sex = factor(sex, levels = c("female", "male")),
-         partnership = factor(partnership, levels = c("LAT", "Cohabitation", "Married"))) |> 
+         partnership = factor(partnership, levels = c("LAT", "Cohabiting", "Married"))) |> 
   ggplot(aes(x = partner_duration, y = estimate,)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "#7D7D7D") +
   geom_line(aes(color = sex,)) +

@@ -7,6 +7,7 @@ packages <-  c(
   "broom", 
   "fixest", 
   "fastDummies",
+  "marginaleffects",
   "plm",
   "modelsummary", 
   "table1",
