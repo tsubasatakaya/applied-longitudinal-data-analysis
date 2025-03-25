@@ -138,10 +138,60 @@ ggsave(file.path(output_path, "static_twfe_coef_plot.png"),
        sta_twfe_coef_plot, width = 7, height = 5, units = "in", dpi = 300)
 
 
+################################################
+# Summary table
+################################################
+cm <- c(
+  "partnershipLAT" = "LAT",
+  "partnershipCohabitation" = "Cohabitation",
+  "partnershipMarried" = "Married",
+  "eduLow" = "Low",
+  "eduMedium" = "Medium",
+  "eduHigh" = "High",
+  "has_kidHas kid" = "Has kid",
+  "empPart-time" = "Part-time",
+  "empFull-time" = "Full-time",
+  "age" = "Age",
+  "log_income" = "Log income",
+  "depression" = "Depression"
+)
+gof_f <- function(x) format(round(x, 2), big.mark = ",")
+gm <- list(
+  list("raw" = "nobs", "clean" = "Observations", "fmt" = gof_f),
+  list("raw" = "r.squared", "clean" = "R\U00B2", "fmt" = gof_f)
+  )
 modelsummary(list("Male" = static_twfe_male,
-                  "Female" = static_twfe_female))  
-
-
+                  "Female" = static_twfe_female), fmt = 2,
+             coef_map = cm, gof_map = gm,
+             output = "gt") |> 
+  tab_row_group(
+    label = "Partnership type (Ref: single)",
+    rows = 1:6
+  ) |> 
+  tab_row_group(
+    label = "Education (Ref: in school)",
+    rows = 9:14
+  ) |> 
+  tab_row_group(
+    label = "Child status (Ref: no kid)",
+    rows = 15:16
+  ) |> 
+  tab_row_group(
+    label = "Employment status (Ref: not working)",
+    rows = 17:20
+  ) |> 
+  tab_row_group(
+    label = "Continuous scale",
+    rows = c(7, 8, 21:24)
+  ) |>
+  row_group_order(groups = c("Partnership type (Ref: single)",
+                             "Education (Ref: in school)",
+                             "Child status (Ref: no kid)",
+                             "Employment status (Ref: not working)",
+                             "Continuous scale")) |> 
+  tab_options(heading.align = "left",
+              table.font.size = "10pt",
+              table.width = pct(60),)
 
 
   
