@@ -4,8 +4,6 @@ source("research_paper/setup.R")
 # Data preparation
 ################################################
 data <- read_dta("data/PAIRFAM.dta") |> 
-  mutate(n_wave = n_distinct(wave), .by = id) |> 
-  filter(n_wave >= 2) |>   # stay in the panel for at least two waves
   arrange(id, wave)
 
 data_filtered <- data |> 
@@ -55,7 +53,9 @@ data_cleaned <- data_filtered |>
                                                       "Cohabitation", "Married")),
          has_kid = factor(has_kid, levels = c("No kid", "Has kid"))) |> 
   drop_na(id, inty, wave, sex, life_sat, partnership, emp,
-          edu, age, has_kid, log_income, depression)
+          edu, age, has_kid, log_income, depression) |> 
+  # Keep only those who remain in at least two waves
+  filter(n_distinct(wave) >= 2, .by = id)
 
 
 ################################################
@@ -194,7 +194,33 @@ modelsummary(list("Male" = static_twfe_male,
               table.width = pct(60),)
 
 
-  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   
   
   
