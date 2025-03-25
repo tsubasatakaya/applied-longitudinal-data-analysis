@@ -1,5 +1,5 @@
 source("research_paper/setup.R")
-
+library(marginaleffects)
 ################################################
 # Data preparation
 ################################################
@@ -16,7 +16,8 @@ data_filtered <- data |>
                                         min(wave[transition_cum == 1])),
          .by = id) |> 
   # keep only up to transition_cum <=1 (keep only the first episode of transition)
-  filter(transition_cum <= 1)
+  filter(transition_cum <= 1) |> 
+  mutate(partner_duration = cumsum(transition_cum), .by = id)
 
 
 ################################################
@@ -72,6 +73,10 @@ desc_tab <- table1(~ sex + age + edu + has_kid + emp + log_income
                    + depression | partnership,
                    data = data_cleaned)
 desc_tab
+
+#===============================================================================
+# Baseline static two-way fixed effects by gender
+#===============================================================================
 
 ################################################
 # Fit static two-way fixed effects model
@@ -194,21 +199,87 @@ modelsummary(list("Male" = static_twfe_male,
               table.width = pct(60),)
 
 
+#===============================================================================
+# Moderated by partnership spell
+#===============================================================================
+twfe_int_duration_formula <- as.formula(
+  paste0("life_sat ~ ", "partner_duration * partnership +", 
+         paste0(controls, collapse = "+"))
+)
 
 
+static_twfe_int_duration_male <- plm(twfe_int_duration_formula, 
+                                     data = data_cleaned |> filter(sex == "Male"),
+                                     index = c("id", "wave"),
+                                     model = "within",
+                                     effect = "twoways")
+static_twfe_int_duration_female <- plm(twfe_int_duration_formula,
+                                       data = data_cleaned |> filter(sex == "Female"),
+                                       index = c("id", "wave"),
+                                       model = "within",
+                                       effect = "twoways")  
+modelsummary(list("Male" = static_twfe_int_duration_male,
+                  "Female" = static_twfe_int_duration_female), 
+             fmt = 2,
+             output = "gt")
+
+partial_slope_data <- tibble()
+sex_vec <- c("male", "female")
+model_list <- list(static_twfe_int_duration_male, static_twfe_int_duration_female)
+for (i in seq_along(sex_vec)) {
+  slope_data <- avg_slopes(model_list[[i]],
+                           variables = "partnership",
+                           by = "partner_duration") |> 
+    mutate(partnership = str_extract(contrast, "(?<=mean\\().+?(?=\\))"),
+           .before = contrast) |> 
+    select(partnership, partner_duration, estimate, conf.low, conf.high) |> 
+    mutate(sex = sex_vec[i])
+  partial_slope_data <- bind_rows(partial_slope_data, slope_data)
+}
+partial_slope_data <- partial_slope_data |> 
+  mutate(partnership = factor(partnership, levels = c("LAT", "Cohabitation", "Married")))
 
 
-
-
-
-
-
-
-
-
-
-
-
+sta_twfe_duration_slope_plot <- partial_slope_data |> 
+  mutate(sex = factor(sex, levels = c("female", "male")),
+         partnership = factor(partnership, levels = c("LAT", "Cohabitation", "Married"))) |> 
+  ggplot(aes(x = partner_duration, y = estimate,)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "#7D7D7D") +
+  geom_line(aes(color = sex,)) +
+  geom_ribbon(aes(x = partner_duration, ymin = conf.low, ymax = conf.high,
+                  fill = sex),
+              alpha = 0.2) +
+  theme_bw() +
+  labs(x = "Partnership duration in waves", y = "Coefficient",
+       title = "Effect of each partnership status by duration") +
+  scale_x_continuous(breaks = seq(0, 10, by = 2),
+                     limits = c(0, 10)) +
+  scale_color_manual(name = "",
+                     values = c("#c00000", "#5488be"),
+                     labels = c("Female", "Male"),
+                     breaks = c("female", "male")) +
+  guides(fill = "none") +
+  facet_grid(partnership ~ sex,
+             labeller = labeller(
+               sex = c("female" = "Female",
+                       "male" = "Male"),
+             )) +
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        plot.title = element_text(size = 14),
+        panel.border = element_rect(color = "grey", fill = NA),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        strip.text = element_text(size = 11, face = "bold"),
+        axis.title = element_text(size = 12,),
+        axis.title.x = element_text(margin = margin(7,0,0,0)),
+        axis.title.y = element_text(margin = margin(0,7,0,0)),
+        axis.text = element_text(size = 11),
+        axis.text.x = element_text(face = "bold"),
+        legend.text = element_text(size = 10))
+sta_twfe_duration_slope_plot
+ggsave(file.path(output_path, "static_twfe_duration_interation_plot.png"),
+       sta_twfe_duration_slope_plot, width = 7, height = 5, units = "in", dpi = 300)
 
 
 
