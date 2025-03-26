@@ -144,7 +144,7 @@ sta_twfe_coef_plot <- ggplot(coef_data,
         legend.text = element_text(size = 10))
 sta_twfe_coef_plot
 ggsave(file.path(output_path, "static_twfe_coef_plot.png"),
-       sta_twfe_coef_plot, width = 7, height = 5, units = "in", dpi = 300)
+       sta_twfe_coef_plot, width = 10, height = 6, units = "in", dpi = 300)
 
 
 ################################################
@@ -284,7 +284,7 @@ sta_twfe_duration_slope_plot <- partial_slope_data |>
         legend.text = element_text(size = 10))
 sta_twfe_duration_slope_plot
 ggsave(file.path(output_path, "static_twfe_duration_interation_plot.png"),
-       sta_twfe_duration_slope_plot, width = 6, height = 6, units = "in", dpi = 300)
+       sta_twfe_duration_slope_plot, width = 8, height = 8, units = "in", dpi = 300)
 
 
 
