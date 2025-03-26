@@ -19,7 +19,7 @@ data_filtered <- data |>
   mutate(partner_duration = cumsum(transition_cum), .by = id)
 
 
-################################################
+##################################DEPRESSION####################################################################################################################
 # Create variables
 ################################################
 data_cleaned <- data_filtered |> 
@@ -56,6 +56,9 @@ data_cleaned <- data_filtered |>
           edu, age, has_kid, log_income, depression) |> 
   # Keep only those who remain in at least two waves
   filter(n_distinct(wave) >= 2, .by = id)
+
+person_years <- nrow(data_cleaned)
+persons <- length(unique(data_cleaned$id))
 
 
 ################################################
@@ -124,13 +127,15 @@ sta_twfe_coef_plot <- ggplot(coef_data,
   geom_point(aes(x = term, y = estimate, color = sex), size = 3,
              position = position_dodge(width = 0.15)) +
   theme_minimal() +
-  labs(x = "", y = "Coefficient") +
+  labs(x = "", y = "Effect of partnership",
+       title = "Effect of partnership status on life satisfaction by partnership type (relative to single)") +
   scale_color_manual(name = "",
                      values = c("#c00000", "#5488be"),
                      labels = c("Female", "Male"),
                      breaks = c("female", "male")) +
   theme(legend.position = "bottom",
         legend.title = element_blank(),
+        plot.title = element_text(size = 14, face = "bold"),
         panel.grid.minor = element_blank(),
         axis.title = element_text(size = 12,),
         axis.title.y = element_text(margin = margin(0,7,0,0)),
@@ -249,8 +254,9 @@ sta_twfe_duration_slope_plot <- partial_slope_data |>
                   fill = sex),
               alpha = 0.2) +
   theme_bw() +
-  labs(x = "Partnership duration in waves", y = "Coefficient",
-       title = "Effect of each partnership status by duration") +
+  labs(x = "Partnership duration in waves", 
+       y = "Effect of parternship",
+       title = "Effect of each partnership status on life satisfaction by duration") +
   scale_x_continuous(breaks = seq(0, 10, by = 2),
                      limits = c(0, 10)) +
   scale_color_manual(name = "",
