@@ -265,7 +265,7 @@ sta_twfe_duration_slope_plot <- partial_slope_data |>
              )) +
   theme(legend.position = "bottom",
         legend.title = element_blank(),
-        plot.title = element_text(size = 14),
+        plot.title = element_text(size = 14, face = "bold"),
         panel.border = element_rect(color = "grey", fill = NA),
         panel.grid.major.x = element_blank(),
         panel.grid.minor.x = element_blank(),
