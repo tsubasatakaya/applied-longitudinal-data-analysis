@@ -4,6 +4,7 @@ packages <-  c(
   "haven",
   "gridExtra",
   "forcats",
+  "glue",
   "broom", 
   "fixest", 
   "fastDummies",
