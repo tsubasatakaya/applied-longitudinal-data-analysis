@@ -65,25 +65,140 @@ coh_data <- data_cleaned |>
 marry_data <- data_cleaned |> 
   filter(partnership_group %in% c(0, 3))
 
+all_data <- list(
+  "lat" = lat_data,
+  "coh" = coh_data,
+  "marry" = marry_data
+)
+
 ################################################
-# Fit dynamic two-way fixed effects model
+# Fit dynamic two-way fixed effects model for each partnership status
 ################################################
 controls <- c("age", "edu", "has_kid", "emp", "log_income", "depression")
 twfe_formula <- as.formula(
   paste0("life_sat ~ ", "relative_time +", paste0(controls, collapse = "+"))
 )
 
-dyn_twfe_lat_male = plm(twfe_formula,
-                        data = marry_data |> filter(sex == "Male"),
-                        index = c("id", "wave"),
-                        model = "within",
-                        effect = "twoways")
-dyn_twfe_lat_female = plm(twfe_formula,
-                        data = marry_data |> filter(sex == "Female"),
-                        index = c("id", "wave"),
-                        model = "within",
-                        effect = "twoways")
-summary(dyn_twfe_lat_female)
+dyn_twfe_all <- list()
+partnership_vec <- c("lat", "coh", "marry")
+for (i in seq_along(partnership_vec)) {
+  print(nrow(all_data[[parnership_vec[i]]]))
+  dyn_male <- plm(twfe_formula,
+                  data = all_data[[parnership_vec[i]]] |> filter(sex == "Male"),
+                  index = c("id", "wave"),
+                  effect = "twoways")
+  dyn_female <- plm(twfe_formula,
+                    data = all_data[[parnership_vec[i]]] |> filter(sex == "Female"),
+                    index = c("id", "wave"),
+                    effect = "twoways")
+  dyn_twfe_all[[parnership_vec[i]]] <- list(
+    "male" = dyn_male,
+    "female" = dyn_female
+  )
+}
+
+################################################
+# Plot event-study coefficients
+################################################
+plot_dynamic_effects <- function(model_list, xmin, xmax, partnership_label) {
+  # Extract coefficients for relative time from plm model for male and female
+  # and save number of observations
+  coef_df <- tibble()
+  nobs_df <- tibble()
+  sex_vec <-  names(model_list)
+  for (i in seq_along(sex_vec)) {
+    # Tidy model results to tibble dataframe
+    coef <- tidy(model_list[[sex_vec[i]]], conf.int = TRUE) |> 
+      # Only keep effects for relative time
+      filter(str_starts(term, "relative_time")) |> 
+      # Remove unnecessary variable name prefix
+      mutate(term = str_replace(term, "relative_time", "")) |> 
+      bind_rows(
+        tibble(
+          term = "0",
+          estimate = 0,
+          conf.high = NA,
+          conf.low = NA
+        )
+      ) |> 
+      # Add sex type variable
+      mutate(sex = sex_vec[i])
+    
+    coef_df <- bind_rows(coef_df, coef)
+    
+    # extract number of observations for text in the plot
+    nobs_df <- bind_rows(nobs_df, tibble(
+      term = xmax + 0.5,
+      estimate = -Inf,
+      nobs_lab = paste0("N = ", nobs(model_list[[sex_vec[i]]])),
+      sex = sex_vec[i]
+    ))
+  }
+  
+  # keep only relevant relative time
+  coef_df <- coef_df |> 
+    mutate(term = as.integer(term)) |> 
+    filter(term >= xmin & term <= xmax)
+  
+  # Plot dynamic effects
+  dyn_effect_plot <- coef_df |> 
+    ggplot(aes(x = term, color = sex)) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    geom_point(aes(y = estimate)) +
+    # geom_line(aes(y = estimate), linewidth = 1) +
+    geom_errorbar(aes(ymin = conf.low, ymax = conf.high), 
+                  width = 0.3) +
+    geom_text(data = nobs_df, 
+              aes(x = term, y = estimate, label = nobs_lab),
+              hjust = 1, vjust = -1,
+              size = 4, color = "black",) +
+    theme_bw() +
+    labs(x = "Relative wave (0 = one wave before treatment)", 
+         y = "Coefficient",
+         title = paste0("Dynamic effects of ", partnership_label, 
+                        " on life satisfaction (baseline: one wave before partnership start)")) +
+    scale_x_continuous(breaks = seq(xmin, xmax, by = 1),
+                       limits = c(xmin-0.5, xmax+0.5)) +
+    scale_color_manual(name = "",
+                       values = c("#c00000", "#5488be"),
+                       labels = c("Female", "Male"),
+                       breaks = c("female", "male")) +
+    facet_wrap(~ sex,
+               labeller = labeller(
+                 sex = c("female" = "Female",
+                         "male" = "Male"),
+               )) +
+    theme(legend.position = "none",
+          legend.title = element_blank(),
+          plot.title = element_text(size = 14),
+          panel.border = element_rect(color = "grey", fill = NA),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          strip.text = element_text(size = 11, face = "bold"),
+          axis.title = element_text(size = 12,),
+          axis.title.x = element_text(margin = margin(7,0,0,0)),
+          axis.title.y = element_text(margin = margin(0,7,0,0)),
+          axis.text = element_text(size = 11),
+          axis.text.x = element_text(face = "bold"),
+          legend.text = element_text(size = 10))
+ return (dyn_effect_plot) 
+}
+
+plot_dynamic_effects(dyn_twfe_all[["marry"]],
+                     xmin = -3, xmax = 5,
+                     partnership_label = "marriage")
+
+
+
+
+
+
+
+
+
+
+
 
 
 
