@@ -154,10 +154,10 @@ plot_dynamic_effects <- function(model_list, xmin, xmax, partnership_label) {
               hjust = 1, vjust = -1,
               size = 4, color = "black",) +
     theme_bw() +
-    labs(x = "Relative wave (0 = one wave before treatment)", 
+    labs(x = "Relative wave (0 = one wave before partnership start)", 
          y = "Coefficient",
          title = paste0("Dynamic effects of ", partnership_label, 
-                        " on life satisfaction (baseline: one wave before partnership start)")) +
+                        " on life satisfaction")) +
     scale_x_continuous(breaks = seq(xmin, xmax, by = 1),
                        limits = c(xmin-0.5, xmax+0.5)) +
     scale_color_manual(name = "",
@@ -185,18 +185,22 @@ plot_dynamic_effects <- function(model_list, xmin, xmax, partnership_label) {
  return (dyn_effect_plot) 
 }
 
-plot_dynamic_effects(dyn_twfe_all[["marry"]],
-                     xmin = -3, xmax = 5,
-                     partnership_label = "marriage")
+dyn_lat_plot <- plot_dynamic_effects(dyn_twfe_all[["lat"]],
+                                     xmin = -3, xmax = 5,
+                                     partnership_label = "LAT")
+dyn_coh_plot <- plot_dynamic_effects(dyn_twfe_all[["coh"]],
+                                     xmin = -3, xmax = 5,
+                                     partnership_label = "cohabitation")
+dyn_marry_plot <- plot_dynamic_effects(dyn_twfe_all[["marry"]],
+                                       xmin = -1, xmax = 5,
+                                       partnership_label = "marriage")
 
-
-
-
-
-
-
-
-
+ggsave(file.path(output_path, "dynamic_twfe_coef_plot_lat.png"),
+       dyn_lat_plot, width = 7, height = 5, units = "in", dpi = 300)
+ggsave(file.path(output_path, "dynamic_twfe_coef_plot_coh.png"),
+       dyn_coh_plot, width = 7, height = 5, units = "in", dpi = 300)
+ggsave(file.path(output_path, "dynamic_twfe_coef_plot_marriage.png"),
+       dyn_marry_plot, width = 7, height = 5, units = "in", dpi = 300)
 
 
 
