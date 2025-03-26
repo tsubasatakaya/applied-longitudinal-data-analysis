@@ -82,16 +82,15 @@ twfe_formula <- as.formula(
 dyn_twfe_all <- list()
 partnership_vec <- c("lat", "coh", "marry")
 for (i in seq_along(partnership_vec)) {
-  print(nrow(all_data[[parnership_vec[i]]]))
   dyn_male <- plm(twfe_formula,
-                  data = all_data[[parnership_vec[i]]] |> filter(sex == "Male"),
+                  data = all_data[[partnership_vec[i]]] |> filter(sex == "Male"),
                   index = c("id", "wave"),
                   effect = "twoways")
   dyn_female <- plm(twfe_formula,
-                    data = all_data[[parnership_vec[i]]] |> filter(sex == "Female"),
+                    data = all_data[[partnership_vec[i]]] |> filter(sex == "Female"),
                     index = c("id", "wave"),
                     effect = "twoways")
-  dyn_twfe_all[[parnership_vec[i]]] <- list(
+  dyn_twfe_all[[partnership_vec[i]]] <- list(
     "male" = dyn_male,
     "female" = dyn_female
   )
@@ -155,7 +154,7 @@ plot_dynamic_effects <- function(model_list, xmin, xmax, partnership_label) {
               size = 4, color = "black",) +
     theme_bw() +
     labs(x = "Relative wave (0 = one wave before partnership start)", 
-         y = "Coefficient",
+         y = "Effect of partnership",
          title = paste0("Dynamic effects of ", partnership_label, 
                         " on life satisfaction")) +
     scale_x_continuous(breaks = seq(xmin, xmax, by = 1),
