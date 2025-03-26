@@ -58,9 +58,13 @@ data_cleaned <- data_filtered |>
   filter(n_distinct(wave) >= 2, .by = id)
 
 
-
-
-
+library(sjPlot)
+controls <- c("age", "edu", "has_kid", "emp", "log_income", "depression")
+anticipation_formula <- as.formula(
+  paste0("life_sat ~ ", "factor(TIME_MARRIAGE) +", paste0(controls, collapse = "+"))
+)
+model_ant <- lm(anticipation_formula, data = data_cleaned)
+plot_model(model_ant, type = "pred", terms = c("TIME_MARRIAGE"))
 
 
 
