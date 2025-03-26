@@ -171,7 +171,7 @@ plot_dynamic_effects <- function(model_list, xmin, xmax, partnership_label) {
                )) +
     theme(legend.position = "none",
           legend.title = element_blank(),
-          plot.title = element_text(size = 14),
+          plot.title = element_text(size = 14, face = "bold"),
           panel.border = element_rect(color = "grey", fill = NA),
           panel.grid.major.x = element_blank(),
           panel.grid.minor.x = element_blank(),
