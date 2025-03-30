@@ -39,10 +39,6 @@ data_processed <- data_processed |>
                          EMP == 2 ~ "Part-time",
                          EMP == 3 ~ "Not working",
                          .default = NA)) |> 
-  mutate(edu = case_when(CASMIN == 0 ~ "In school",
-                         CASMIN == 1 ~ "Low",
-                         CASMIN == 2 ~ "Medium",
-                         CASMIN == 3 ~ "High")) |> 
   mutate(has_kid = case_when(nkids > 0 ~ "Has kid",
                              nkids == 0 ~ "No kid",
                              .default = NA)) |> 
@@ -57,9 +53,8 @@ data_processed <- data_processed |>
          life_sat = "sat6") |> 
   mutate(sex = factor(sex, levels = c("Male", "Female")),
          emp = factor(emp, levels = c("Not working", "Part-time", "Full-time")),
-         edu = factor(edu, levels = c("In school", "Low", "Medium", "High")),
          partnership = factor(partnership, levels = c("Single", "LAT", 
                                                       "Cohabiting", "Married")),
          has_kid = factor(has_kid, levels = c("No kid", "Has kid"))) |> 
   drop_na(id, inty, wave, sex, life_sat, partnership, emp,
-          edu, age, has_kid, log_income, depression)
+          age, has_kid, log_income, depression)

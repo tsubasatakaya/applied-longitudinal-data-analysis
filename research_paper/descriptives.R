@@ -9,12 +9,11 @@ source("research_paper/process_data.R")
 ################################################
 table1::label(data_processed$sex) <- "Sex"
 table1::label(data_processed$age) <- "Age"
-table1::label(data_processed$edu) <- "Education"
 table1::label(data_processed$has_kid) <- "Child status"
 table1::label(data_processed$emp) <- "Employment status"
 table1::label(data_processed$log_income) <- "Log income"
 table1::label(data_processed$depression) <- "Depression"
-desc_tab <- table1(~ sex + age + edu + has_kid + emp + log_income 
+desc_tab <- table1(~ sex + age + has_kid + emp + log_income 
                    + depression | partnership,
                    data = data_processed)
 desc_tab
@@ -57,12 +56,11 @@ data_processed_dynamic <- data_processed |>
 ################################################
 table1::label(data_processed_dynamic$sex) <- "Sex"
 table1::label(data_processed_dynamic$age) <- "Age"
-table1::label(data_processed_dynamic$edu) <- "Education"
 table1::label(data_processed_dynamic$has_kid) <- "Child status"
 table1::label(data_processed_dynamic$emp) <- "Employment status"
 table1::label(data_processed_dynamic$log_income) <- "Log income"
 table1::label(data_processed_dynamic$depression) <- "Depression"
-desc_tab_dynamic <- table1(~ sex + age + edu + has_kid + emp + log_income 
+desc_tab_dynamic <- table1(~ sex + age + has_kid + emp + log_income 
                            + depression | partnership,
                            data = data_processed_dynamic)
 desc_tab_dynamic
@@ -73,7 +71,7 @@ print(paste0("Number of persons: ", length(unique(data_processed_dynamic$id))))
 ################################################
 # Within variation
 ################################################
-variables <- c("age", "edu", "has_kid", "emp", "log_income", "depression")
+variables <- c("age", "has_kid", "emp", "log_income", "depression")
 
 within_summary_data_dynamic <- data_processed_dynamic |> 
   mutate(across(all_of(variables), ~ as.numeric(.x) - mean(as.numeric(.x), na.rm = TRUE),
