@@ -39,8 +39,8 @@ data_processed <- data_processed |>
                          EMP == 2 ~ "Part-time",
                          EMP == 3 ~ "Not working",
                          .default = NA)) |> 
-  mutate(has_kid = case_when(nkids > 0 ~ "Has kid",
-                             nkids == 0 ~ "No kid",
+  mutate(has_kid = case_when(nkids > 0 ~ "Has child",
+                             nkids == 0 ~ "No child",
                              .default = NA)) |> 
   mutate(partnership = case_when(FAM_NOW == 0 ~ "Single",
                                  FAM_NOW == 1 ~ "LAT",
@@ -55,6 +55,6 @@ data_processed <- data_processed |>
          emp = factor(emp, levels = c("Not working", "Part-time", "Full-time")),
          partnership = factor(partnership, levels = c("Single", "LAT", 
                                                       "Cohabiting", "Married")),
-         has_kid = factor(has_kid, levels = c("No kid", "Has kid"))) |> 
+         has_kid = factor(has_kid, levels = c("No child", "Has child"))) |> 
   drop_na(id, inty, wave, sex, life_sat, partnership, emp,
           age, has_kid, log_income, depression)
