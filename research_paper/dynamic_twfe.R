@@ -1,31 +1,17 @@
 source("research_paper/setup.R")
+source("research_paper/process_data.R")
 ################################################
 # Data preparation
 ################################################
-data <- read_dta("data/PAIRFAM.dta") |> 
-  arrange(id, wave)
-
-data_filtered <- data |> 
-  # derive transition point
-  # and calculate nth of transition point
-  mutate(transition = FAM_NOW != dplyr::lag(FAM_NOW, 1, default = first(FAM_NOW)),
-         transition_cum = cumsum(transition),
-         first_transition_wave = ifelse(all(transition_cum == 0),
-                                        0,
-                                        min(wave[transition_cum == 1])),
-         .by = id) |> 
-  # keep only up to transition_cum <=1 (keep only the first episode of transition)
-  filter(transition_cum <= 1) |> 
-  # which partnership status one ends up in
-  mutate(partnership_group = max(FAM_NOW), .by = id) |> 
-  # treated group or never treated
-  mutate(treated = as.integer(partnership_group != 0)) |> 
+data_processed <- data_processed |> 
   # keep only those who were single at first
-  filter(first(FAM_NOW) == 0, .by = id) |> 
+  filter(single_first_wave) |> 
   mutate(relative_time = ifelse(treated == 1, 
                                 wave - first_transition_wave + 1, 0)) |> 
   mutate(relative_time = factor(relative_time, 
-                                levels = c(0, unique(relative_time[relative_time != 0]))))
+                                levels = c(0, unique(relative_time[relative_time != 0])))) |> 
+  # Keep only those who remain in at least two waves
+  filter(n_distinct(wave) >= 2, .by = id)
 
 ################################################
 # Create variables
