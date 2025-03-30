@@ -1,105 +1,208 @@
 source("research_paper/setup.R")
-################################################
-# Data preparation
-################################################
-data <- read_dta("data/PAIRFAM.dta") |> 
-  arrange(id, wave)
+source("research_paper/process_data.R")
 
-data_filtered <- data |> 
-  # derive transition point
-  # and calculate nth of transition point
-  mutate(transition = FAM_NOW != dplyr::lag(FAM_NOW, 1, default = first(FAM_NOW)),
-         transition_cum = cumsum(transition),
-         first_transition_wave = ifelse(all(transition_cum == 0),
-                                        0,
-                                        min(wave[transition_cum == 1])),
-         .by = id) |> 
-  # keep only up to transition_cum <=1 (keep only the first episode of transition)
-  filter(transition_cum <= 1) |> 
-  mutate(partner_duration = cumsum(transition_cum), .by = id)
-
-
-##################################DEPRESSION####################################################################################################################
-# Create variables
-################################################
-data_cleaned <- data_filtered |> 
-  mutate(sex = case_when(SEX == 1 ~ "Male",
-                         SEX == 2 ~ "Female",
-                         .default = NA)) |> 
-  mutate(emp = case_when(EMP == 1 ~ "Full-time",
-                         EMP == 2 ~ "Part-time",
-                         EMP == 3 ~ "Not working",
-                         .default = NA)) |> 
-  mutate(edu = case_when(CASMIN == 0 ~ "In school",
-                         CASMIN == 1 ~ "Low",
-                         CASMIN == 2 ~ "Medium",
-                         CASMIN == 3 ~ "High")) |> 
-  mutate(has_kid = case_when(nkids > 0 ~ "Has kid",
-                             nkids == 0 ~ "No kid",
-                             .default = NA)) |> 
-  mutate(partnership = case_when(FAM_NOW == 0 ~ "Single",
-                                 FAM_NOW == 1 ~ "LAT",
-                                 FAM_NOW == 2 ~ "Cohabiting",
-                                 FAM_NOW == 3 ~ "Married",
-                                 .default = NA)) |> 
-  mutate(log_income = log(hhincoecd)) |> 
-  rename(age = "AGE",
-         depression = "DEPRESSION",
-         life_sat = "sat6") |> 
-  mutate(sex = factor(sex, levels = c("Male", "Female")),
-         emp = factor(emp, levels = c("Not working", "Part-time", "Full-time")),
-         edu = factor(edu, levels = c("In school", "Low", "Medium", "High")),
-         partnership = factor(partnership, levels = c("Single", "LAT", 
-                                                      "Cohabiting", "Married")),
-         has_kid = factor(has_kid, levels = c("No kid", "Has kid"))) |> 
-  drop_na(id, inty, wave, sex, life_sat, partnership, emp,
-          edu, age, has_kid, log_income, depression) |> 
+data_full <- data_processed
+data_rest <- data_processed |> 
+  filter(single_first_wave) |> 
+  mutate(relative_time = ifelse(treated == 1, 
+                                wave - first_transition_wave + 1, 0)) |> 
+  mutate(relative_time = factor(relative_time, 
+                                levels = c(0, unique(relative_time[relative_time != 0])))) |> 
   # Keep only those who remain in at least two waves
   filter(n_distinct(wave) >= 2, .by = id)
 
-person_years <- nrow(data_cleaned)
-persons <- length(unique(data_cleaned$id))
+# Modelsummary configuration
+cm <- c(
+  "partnershipLAT" = "LAT",
+  "partnershipCohabiting" = "Cohabiting",
+  "partnershipMarried" = "Married",
+  "has_kidHas child" = "Has child",
+  "empPart-time" = "Part-time",
+  "empFull-time" = "Full-time",
+  "age" = "Age",
+  "log_income" = "Log income",
+  "depression" = "Depression"
+)
+gof_f <- function(x) format(round(x, 2), big.mark = ",")
+gm <- list(
+  list("raw" = "nobs", "clean" = "Observations", "fmt" = gof_f),
+  list("raw" = "r.squared", "clean" = "R\U00B2", "fmt" = gof_f)
+)
+
+#===============================================================================
+# Baseline pooled OLS
+#===============================================================================
+controls <- c("age", "has_kid", "emp", "log_income", "depression")
+formula <- as.formula(
+  paste0("life_sat ~ ", "partnership +", paste0(controls, collapse = "+"))
+)
+pooled_ols_male_full <- lm(formula,
+                           data = data_full |> filter(sex == "Male"))
+pooled_ols_female_full <- lm(formula,
+                             data = data_full |> filter(sex == "Female"))
+pooled_ols_male_rest <- lm(formula,
+                           data = data_rest |> filter(sex == "Male"))
+pooled_ols_female_rest <- lm(formula,
+                             data = data_rest |> filter(sex == "Female"))
 
 
-################################################
-# Sample statistics
-################################################
-table1::label(data_cleaned$sex) <- "Sex"
-table1::label(data_cleaned$age) <- "Age"
-table1::label(data_cleaned$edu) <- "Education"
-table1::label(data_cleaned$has_kid) <- "Child status"
-table1::label(data_cleaned$emp) <- "Employment status"
-table1::label(data_cleaned$log_income) <- "Log income"
-table1::label(data_cleaned$depression) <- "Depression"
-desc_tab <- table1(~ sex + age + edu + has_kid + emp + log_income 
-                   + depression | partnership,
-                   data = data_cleaned)
-desc_tab
+# Create results table
+modelsummary(list("(1)" = pooled_ols_male_full,
+                  "(2)" = pooled_ols_female_full,
+                  "(3)" = pooled_ols_male_rest,
+                  "(4)" = pooled_ols_female_rest), 
+             fmt = 2,
+             coef_map = cm, gof_map = gm,
+             output = "gt") |> 
+  tab_spanner(
+    label = "Male",
+    columns = c(2, 4),
+    gather = FALSE
+  ) |> 
+  tab_spanner(
+    label = "Female",
+    columns = c(3, 5),
+    gather = FALSE
+  ) |> 
+  tab_spanner(
+    label = "Full sample",
+    columns = 2:3
+  ) |> 
+  tab_spanner(
+    label = "Restricted sample",
+    columns = 4:5
+  ) |> 
+  tab_row_group(
+    label = "Partnership type (Ref: single)",
+    rows = 1:6
+  ) |> 
+  tab_row_group(
+    label = "Child status (Ref: no child)",
+    rows = 7:8
+  ) |> 
+  tab_row_group(
+    label = "Employment status (Ref: not working)",
+    rows = 9:12
+  ) |> 
+  tab_row_group(
+    label = "Continuous scale",
+    rows = c(13:18)
+  ) |>
+  row_group_order(groups = c("Partnership type (Ref: single)",
+                             "Child status (Ref: no child)",
+                             "Employment status (Ref: not working)",
+                             "Continuous scale")) |> 
+  tab_options(
+    table.width = pct(60)
+  )
+
 
 #===============================================================================
 # Baseline static two-way fixed effects by gender
 #===============================================================================
 
 ################################################
-# Fit static two-way fixed effects model
+# Fit static two-way fixed effects model in loop
 ################################################
-controls <- c("age", "edu", "has_kid", "emp", "log_income", "depression")
-twfe_formula <- as.formula(
+formula <- as.formula(
   paste0("life_sat ~ ", "partnership +", paste0(controls, collapse = "+"))
 )
 
+static_twfe_all <- list()
+gender_tag <- rep(c("Male", "Female"), 4)
 
+for (i in seq_along(gender_tag)) {
+  if ((i - 1) %/% 2 == 0) {
+    selected_controls <- controls[!controls %in% c("has_kid", "emp")]
+  } else if ((i - 1) %/% 2 == 1) {
+    selected_controls <- controls[!controls %in% c("has_kid")]
+  } else if ((i - 1) %/% 2 == 2) {
+    selected_controls <- controls[!controls %in% c("emp")]
+  } else {
+    selected_controls <- controls
+  }
+  
+  formula <- as.formula(
+    paste0("life_sat ~ ", "partnership +", paste0(selected_controls, collapse = "+"))
+  )
+  
+  twfe <- plm(formula,
+              data = data_full |>  filter(sex == gender_tag[i]),
+              index = c("id", "wave"),
+              model = "within",
+              effect = "twoways")
+  
+  static_twfe_all[[paste0("(", i, ")")]] <- twfe
+}
+
+
+################################################
+# Summary table
+################################################
+# Create results table
+modelsummary(static_twfe_all, 
+             fmt = 2,
+             coef_map = cm, gof_map = gm,
+             output = "gt") |> 
+  tab_spanner(
+    label = "Male",
+    columns = c(2, 4),
+    gather = FALSE
+  ) |> 
+  tab_spanner(
+    label = "Female",
+    columns = c(3, 5),
+    gather = FALSE
+  ) |> 
+  tab_spanner(
+    label = "Full sample",
+    columns = 2:3
+  ) |> 
+  tab_spanner(
+    label = "Restricted sample",
+    columns = 4:5
+  ) |> 
+  tab_row_group(
+    label = "Partnership type (Ref: single)",
+    rows = 1:6
+  ) |> 
+  tab_row_group(
+    label = "Child status (Ref: no child)",
+    rows = 7:8
+  ) |> 
+  tab_row_group(
+    label = "Employment status (Ref: not working)",
+    rows = 9:12
+  ) |> 
+  tab_row_group(
+    label = "Continuous scale",
+    rows = c(13:18)
+  ) |>
+  row_group_order(groups = c("Partnership type (Ref: single)",
+                             "Child status (Ref: no child)",
+                             "Employment status (Ref: not working)",
+                             "Continuous scale")) |> 
+  tab_options(
+    table.width = pct(60)
+  )
+
+
+twfe_formula <- as.formula(
+  paste0("life_sat ~ ", "partnership +", paste0(controls[!controls %in% c("depression")], 
+                                                collapse = "+"))
+)
 static_twfe_male <- plm(twfe_formula, 
-                        data = data_cleaned |> filter(sex == "Male"),
+                        data = data_full |> filter(sex == "Male"),
                         index = c("id", "wave"),
                         model = "within",
                         effect = "twoways")
 static_twfe_female <- plm(twfe_formula,
-                          data = data_cleaned |> filter(sex == "Female"),
+                          data = data_full |> filter(sex == "Female"),
                           index = c("id", "wave"),
                           model = "within",
                           effect = "twoways")  
-
+modelsummary(list(static_twfe_male, static_twfe_female),
+             coef_map = cm, gof_map = gm, fmt = 2)
 
 ################################################
 # Plot coefficients
@@ -147,61 +250,6 @@ ggsave(file.path(output_path, "static_twfe_coef_plot.png"),
        sta_twfe_coef_plot, width = 9, height = 6, units = "in", dpi = 300)
 
 
-################################################
-# Summary table
-################################################
-cm <- c(
-  "partnershipLAT" = "LAT",
-  "partnershipCohabiting" = "Cohabiting",
-  "partnershipMarried" = "Married",
-  "eduLow" = "Low",
-  "eduMedium" = "Medium",
-  "eduHigh" = "High",
-  "has_kidHas kid" = "Has kid",
-  "empPart-time" = "Part-time",
-  "empFull-time" = "Full-time",
-  "age" = "Age",
-  "log_income" = "Log income",
-  "depression" = "Depression"
-)
-gof_f <- function(x) format(round(x, 2), big.mark = ",")
-gm <- list(
-  list("raw" = "nobs", "clean" = "Observations", "fmt" = gof_f),
-  list("raw" = "r.squared", "clean" = "R\U00B2", "fmt" = gof_f)
-  )
-modelsummary(list("Male" = static_twfe_male,
-                  "Female" = static_twfe_female), fmt = 2,
-             coef_map = cm, gof_map = gm,
-             output = "gt") |> 
-  tab_row_group(
-    label = "Partnership type (Ref: single)",
-    rows = 1:6
-  ) |> 
-  tab_row_group(
-    label = "Education (Ref: in school)",
-    rows = 9:14
-  ) |> 
-  tab_row_group(
-    label = "Child status (Ref: no kid)",
-    rows = 15:16
-  ) |> 
-  tab_row_group(
-    label = "Employment status (Ref: not working)",
-    rows = 17:20
-  ) |> 
-  tab_row_group(
-    label = "Continuous scale",
-    rows = c(7, 8, 21:24)
-  ) |>
-  row_group_order(groups = c("Partnership type (Ref: single)",
-                             "Education (Ref: in school)",
-                             "Child status (Ref: no kid)",
-                             "Employment status (Ref: not working)",
-                             "Continuous scale")) |> 
-  tab_options(heading.align = "left",
-              table.font.size = "10pt",
-              table.width = pct(60),)
-
 
 #===============================================================================
 # Moderated by partnership spell
@@ -213,12 +261,12 @@ twfe_int_duration_formula <- as.formula(
 
 
 static_twfe_int_duration_male <- plm(twfe_int_duration_formula, 
-                                     data = data_cleaned |> filter(sex == "Male"),
+                                     data = data_processed |> filter(sex == "Male"),
                                      index = c("id", "wave"),
                                      model = "within",
                                      effect = "twoways")
 static_twfe_int_duration_female <- plm(twfe_int_duration_formula,
-                                       data = data_cleaned |> filter(sex == "Female"),
+                                       data = data_processed |> filter(sex == "Female"),
                                        index = c("id", "wave"),
                                        model = "within",
                                        effect = "twoways")  
