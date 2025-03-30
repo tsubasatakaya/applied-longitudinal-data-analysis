@@ -26,7 +26,9 @@ data_processed <- data  |>
   # which partnership status one ends up in
   mutate(partnership_group = max(FAM_NOW), .by = id) |> 
   # treated or never treated
-  mutate(treated = as.integer(partnership_group != 0))
+  mutate(treated = as.integer(partnership_group != 0)) |> 
+  # single in the first wave
+  mutate(single_first_wave = first(FAM_NOW) == 0, .by = id)
 
 # Controls
 data_processed <- data_processed |> 
