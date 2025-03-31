@@ -32,8 +32,8 @@ data_processed <- data  |>
 
 # Controls
 data_processed <- data_processed |> 
-  mutate(sex = case_when(SEX == 1 ~ "Male",
-                         SEX == 2 ~ "Female",
+  mutate(sex = case_when(SEX == 1 ~ "Men",
+                         SEX == 2 ~ "Women",
                          .default = NA)) |> 
   mutate(emp = case_when(EMP == 1 ~ "Full-time",
                          EMP == 2 ~ "Part-time",
@@ -51,7 +51,7 @@ data_processed <- data_processed |>
   rename(age = "AGE",
          depression = "DEPRESSION",
          life_sat = "sat6") |> 
-  mutate(sex = factor(sex, levels = c("Male", "Female")),
+  mutate(sex = factor(sex, levels = c("Men", "Women")),
          emp = factor(emp, levels = c("Not working", "Part-time", "Full-time")),
          partnership = factor(partnership, levels = c("Single", "LAT", 
                                                       "Cohabiting", "Married")),
