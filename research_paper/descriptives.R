@@ -2,7 +2,7 @@ source("research_paper/setup.R")
 source("research_paper/process_data.R")
 
 #===============================================================================
-# Static TWFE
+# Full sample
 #===============================================================================
 ################################################
 # Sample statistics (on person-year level)
@@ -40,7 +40,7 @@ within_summary_data <- data_processed |>
 
 
 #===============================================================================
-# Dynamic TWFE
+# Restricted sample
 #===============================================================================
 data_processed_dynamic <- data_processed |> 
   filter(single_first_wave) |> 
