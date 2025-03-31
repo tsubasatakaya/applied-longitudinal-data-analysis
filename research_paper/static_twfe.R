@@ -57,12 +57,12 @@ modelsummary(list("(1)" = pooled_ols_male_full,
              coef_map = cm, gof_map = gm,
              output = "gt") |> 
   tab_spanner(
-    label = "Male",
+    label = "Men",
     columns = c(2, 4),
     gather = FALSE
   ) |> 
   tab_spanner(
-    label = "Female",
+    label = "Women",
     columns = c(3, 5),
     gather = FALSE
   ) |> 
@@ -162,12 +162,12 @@ modelsummary(static_twfe_all,
              coef_map = cm, gof_map = gm,
              output = "gt") |> 
   tab_spanner(
-    label = "Male",
+    label = "Men",
     columns = seq(2, 10, 2),
     gather = FALSE
   ) |> 
   tab_spanner(
-    label = "Female",
+    label = "Women",
     columns = seq(3, 11, 2),
     gather = FALSE
   ) |> 
