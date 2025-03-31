@@ -155,7 +155,7 @@ ggsave(file.path(output_path, "dynamic_twfe_coef_plot_marriage.png"),
 
 
 ################################################
-# Summary table (not shown in the paper)
+# Summary table 
 ################################################
 # Modelsummary configuration
 cm <- c(
