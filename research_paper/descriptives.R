@@ -24,7 +24,7 @@ print(paste0("Number of persons: ", length(unique(data_processed$id))))
 ################################################
 # Within variation
 ################################################
-variables <- c("age", "edu", "has_kid", "emp", "log_income", "depression")
+variables <- c("age", "has_kid", "emp", "log_income", "depression")
 
 within_summary_data <- data_processed |> 
   mutate(across(all_of(variables), ~ as.numeric(.x) - mean(as.numeric(.x), na.rm = TRUE),
