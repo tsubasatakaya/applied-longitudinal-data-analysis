@@ -37,13 +37,13 @@ formula <- as.formula(
   paste0("life_sat ~ ", "partnership +", paste0(controls, collapse = "+"))
 )
 pooled_ols_male_full <- lm(formula,
-                           data = data_full |> filter(sex == "Male"))
+                           data = data_full |> filter(sex == "Men"))
 pooled_ols_female_full <- lm(formula,
-                             data = data_full |> filter(sex == "Female"))
+                             data = data_full |> filter(sex == "Women"))
 pooled_ols_male_rest <- lm(formula,
-                           data = data_rest |> filter(sex == "Male"))
+                           data = data_rest |> filter(sex == "Men"))
 pooled_ols_female_rest <- lm(formula,
-                             data = data_rest |> filter(sex == "Female"))
+                             data = data_rest |> filter(sex == "Women"))
 
 
 ################################################
