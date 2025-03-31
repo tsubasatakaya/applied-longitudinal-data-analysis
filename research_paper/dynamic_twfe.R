@@ -56,7 +56,7 @@ for (i in seq_along(partnership_vec)) {
 ################################################
 # Plot event-study coefficients
 ################################################
-plot_dynamic_effects <- function(model_list, xmin, xmax, partnership_label) {
+plot_dynamic_effects <- function(model_list, xmin, xmax) {
   # Extract coefficients for relative time from plm model for male and female
   # and save number of observations
   coef_df <- tibble()
@@ -111,9 +111,7 @@ plot_dynamic_effects <- function(model_list, xmin, xmax, partnership_label) {
               size = 4, color = "black",) +
     theme_bw() +
     labs(x = "Relative wave (0 = one wave before partnership start)", 
-         y = "Effect of partnership",
-         title = paste0("Dynamic effects of ", partnership_label, 
-                        " on life satisfaction")) +
+         y = "Effect of partnership") +
     scale_x_continuous(breaks = seq(xmin, xmax, by = 1),
                        limits = c(xmin-0.5, xmax+0.5)) +
     scale_color_manual(name = "",
@@ -142,14 +140,11 @@ plot_dynamic_effects <- function(model_list, xmin, xmax, partnership_label) {
 }
 
 dyn_lat_plot <- plot_dynamic_effects(dyn_twfe_all[["lat"]],
-                                     xmin = -3, xmax = 5,
-                                     partnership_label = "LAT")
+                                     xmin = -3, xmax = 5)
 dyn_coh_plot <- plot_dynamic_effects(dyn_twfe_all[["coh"]],
-                                     xmin = -3, xmax = 5,
-                                     partnership_label = "cohabitation")
+                                     xmin = -3, xmax = 5)
 dyn_marry_plot <- plot_dynamic_effects(dyn_twfe_all[["marry"]],
-                                       xmin = -1, xmax = 5,
-                                       partnership_label = "marriage")
+                                       xmin = -1, xmax = 5)
 
 ggsave(file.path(output_path, "dynamic_twfe_coef_plot_lat.png"),
        dyn_lat_plot, width = 7, height = 5, units = "in", dpi = 300)
@@ -157,6 +152,68 @@ ggsave(file.path(output_path, "dynamic_twfe_coef_plot_coh.png"),
        dyn_coh_plot, width = 7, height = 5, units = "in", dpi = 300)
 ggsave(file.path(output_path, "dynamic_twfe_coef_plot_marriage.png"),
        dyn_marry_plot, width = 7, height = 5, units = "in", dpi = 300)
+
+
+################################################
+# Summary table (not shown in the paper)
+################################################
+# Modelsummary configuration
+cm <- c(
+  "relative_time-3" = "t-3",
+  "relative_time-2" = "t-2",
+  "relative_time-1" = "t-1",
+  "relative_time1" = "t+1",
+  "relative_time2" = "t+2",
+  "relative_time3" = "t+3",
+  "relative_time4" = "t+4",
+  "relative_time5" = "t+5"
+)
+gof_f <- function(x) format(round(x, 2), big.mark = ",")
+gm <- list(
+  list("raw" = "nobs", "clean" = "Observations", "fmt" = gof_f)
+)
+modelsummary(flatten(list(dyn_twfe_all[["lat"]],
+                          dyn_twfe_all[["coh"]],
+                          dyn_twfe_all[["marry"]])),
+             fmt = 2,
+             coef_map = cm, gof_map = gm,
+             output = "gt") |> 
+  tab_spanner(
+    label = "LAT",
+    columns = 2:3,
+  ) |> 
+  tab_spanner(
+    label = "Cohabitation",
+    columns = 4:5
+  ) |> 
+  tab_spanner(
+    label = "Marriage",
+    columns = 6:7
+  ) |> 
+  cols_label(
+    starts_with("men") ~ "Men",
+    starts_with("women") ~ "Women"
+  ) |> 
+  tab_options(
+    table.width = pct(60)
+  )
+
+
+
+lapply(s, unlist)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
