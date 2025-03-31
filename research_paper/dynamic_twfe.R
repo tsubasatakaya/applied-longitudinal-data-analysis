@@ -3,8 +3,7 @@ source("research_paper/process_data.R")
 ################################################
 # Data preparation
 ################################################
-data_processed <- data_processed |> 
-  # keep only those who were single at first
+data_rest <- data_processed |> 
   filter(single_first_wave) |> 
   mutate(relative_time = ifelse(treated == 1, 
                                 wave - first_transition_wave + 1, 0)) |> 
@@ -14,41 +13,13 @@ data_processed <- data_processed |>
   filter(n_distinct(wave) >= 2, .by = id)
 
 ################################################
-# Create variables
+# Subset data
 ################################################
-data_cleaned <- data_filtered |> 
-  mutate(sex = case_when(SEX == 1 ~ "Male",
-                         SEX == 2 ~ "Female",
-                         .default = NA)) |> 
-  mutate(emp = case_when(EMP == 1 ~ "Full-time",
-                         EMP == 2 ~ "Part-time",
-                         EMP == 3 ~ "Not working",
-                         .default = NA)) |> 
-  mutate(edu = case_when(CASMIN == 0 ~ "In school",
-                         CASMIN == 1 ~ "Low",
-                         CASMIN == 2 ~ "Medium",
-                         CASMIN == 3 ~ "High")) |> 
-  mutate(has_kid = case_when(nkids > 0 ~ "Has kid",
-                             nkids == 0 ~ "No kid",
-                             .default = NA)) |> 
-  mutate(log_income = log(hhincoecd)) |> 
-  rename(age = "AGE",
-         depression = "DEPRESSION",
-         life_sat = "sat6") |> 
-  mutate(sex = factor(sex, levels = c("Male", "Female")),
-         emp = factor(emp, levels = c("Not working", "Part-time", "Full-time")),
-         edu = factor(edu, levels = c("In school", "Low", "Medium", "High")),
-         has_kid = factor(has_kid, levels = c("No kid", "Has kid"))) |> 
-  drop_na(id, inty, wave, sex, life_sat, relative_time, partnership_group, emp,
-          edu, age, has_kid, log_income, depression) |> 
-  # Keep only those who remain in at least two waves
-  filter(n_distinct(wave) >= 2, .by = id)
-
-lat_data <- data_cleaned |> 
+lat_data <- data_rest |> 
   filter(partnership_group %in% c(0, 1))
-coh_data <- data_cleaned |> 
+coh_data <- data_rest |> 
   filter(partnership_group %in% c(0, 2))
-marry_data <- data_cleaned |> 
+marry_data <- data_rest |> 
   filter(partnership_group %in% c(0, 3))
 
 all_data <- list(
@@ -60,7 +31,7 @@ all_data <- list(
 ################################################
 # Fit dynamic two-way fixed effects model for each partnership status
 ################################################
-controls <- c("age", "edu", "has_kid", "emp", "log_income", "depression")
+controls <- c("age", "log_income", "depression")
 twfe_formula <- as.formula(
   paste0("life_sat ~ ", "relative_time +", paste0(controls, collapse = "+"))
 )
@@ -69,16 +40,16 @@ dyn_twfe_all <- list()
 partnership_vec <- c("lat", "coh", "marry")
 for (i in seq_along(partnership_vec)) {
   dyn_male <- plm(twfe_formula,
-                  data = all_data[[partnership_vec[i]]] |> filter(sex == "Male"),
+                  data = all_data[[partnership_vec[i]]] |> filter(sex == "Men"),
                   index = c("id", "wave"),
                   effect = "twoways")
   dyn_female <- plm(twfe_formula,
-                    data = all_data[[partnership_vec[i]]] |> filter(sex == "Female"),
+                    data = all_data[[partnership_vec[i]]] |> filter(sex == "Women"),
                     index = c("id", "wave"),
                     effect = "twoways")
   dyn_twfe_all[[partnership_vec[i]]] <- list(
-    "male" = dyn_male,
-    "female" = dyn_female
+    "men" = dyn_male,
+    "women" = dyn_female
   )
 }
 
@@ -147,12 +118,12 @@ plot_dynamic_effects <- function(model_list, xmin, xmax, partnership_label) {
                        limits = c(xmin-0.5, xmax+0.5)) +
     scale_color_manual(name = "",
                        values = c("#c00000", "#5488be"),
-                       labels = c("Female", "Male"),
-                       breaks = c("female", "male")) +
+                       labels = c("Women", "Men"),
+                       breaks = c("women", "men")) +
     facet_wrap(~ sex,
                labeller = labeller(
-                 sex = c("female" = "Female",
-                         "male" = "Male"),
+                 sex = c("men" = "Men",
+                         "women" = "Women"),
                )) +
     theme(legend.position = "none",
           legend.title = element_blank(),
