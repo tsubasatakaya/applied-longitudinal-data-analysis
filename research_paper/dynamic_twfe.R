@@ -166,11 +166,15 @@ cm <- c(
   "relative_time2" = "t+2",
   "relative_time3" = "t+3",
   "relative_time4" = "t+4",
-  "relative_time5" = "t+5"
+  "relative_time5" = "t+5",
+  "age" = "Age",
+  "log_income" = "Log income",
+  "depression" = "Depression"
 )
 gof_f <- function(x) format(round(x, 2), big.mark = ",")
 gm <- list(
-  list("raw" = "nobs", "clean" = "Observations", "fmt" = gof_f)
+  list("raw" = "nobs", "clean" = "Observations", "fmt" = gof_f),
+  list("raw" = "r.squared", "clean" = "R\U00B2", "fmt" = gof_f)
 )
 modelsummary(flatten(list(dyn_twfe_all[["lat"]],
                           dyn_twfe_all[["coh"]],
@@ -194,15 +198,21 @@ modelsummary(flatten(list(dyn_twfe_all[["lat"]],
     starts_with("men") ~ "Men",
     starts_with("women") ~ "Women"
   ) |> 
+  tab_row_group(
+    label = "Treatment effect (Ref: t = 0)",
+    rows = c(1:16)
+  ) |> 
+  tab_row_group(
+    label = "Controls",
+    rows = c(17:20)
+  ) |>
+  row_group_order(
+    groups = c("Treatment effect (Ref: t = 0)",
+               "Controls")
+  ) |> 
   tab_options(
     table.width = pct(60)
   )
-
-
-
-lapply(s, unlist)
-
-
 
 
 
