@@ -111,7 +111,7 @@ formula <- as.formula(
 )
 
 static_twfe_all <- list()
-gender_tag <- rep(c("Male", "Female"), 4)
+gender_tag <- rep(c("Men", "Women"), 4)
 
 for (i in seq_along(gender_tag)) {
   if ((i - 1) %/% 2 == 0) {
@@ -143,12 +143,12 @@ formula <- as.formula(
                                                 collapse = "+"))
 )
 static_twfe_all[["(9)"]] <- plm(formula,
-                                data = data_rest |>  filter(sex == "Male"),
+                                data = data_rest |>  filter(sex == "Men"),
                                 index = c("id", "wave"),
                                 model = "within",
                                 effect = "twoways")
 static_twfe_all[["(10)"]] <- plm(formula,
-                                 data = data_rest |>  filter(sex == "Female"),
+                                 data = data_rest |>  filter(sex == "Women"),
                                  index = c("id", "wave"),
                                  model = "within",
                                  effect = "twoways")
@@ -212,10 +212,10 @@ single_coef <- tibble(
   conf.low = 0,
   conf.high = 0
 )
-coef_data <- tidy(static_twfe_male, conf.int = TRUE) |> 
-  mutate(sex = "male") |> 
-  bind_rows(tidy(static_twfe_female, conf.int = TRUE) |> 
-              mutate(sex = "female")) |> 
+coef_data <- tidy(static_twfe_all[["(1)"]], conf.int = TRUE) |> 
+  mutate(sex = "men") |> 
+  bind_rows(tidy(static_twfe_all[["(2)"]], conf.int = TRUE) |> 
+              mutate(sex = "women")) |> 
   mutate(term = str_replace(term, "partnership", "")) |> 
   filter(term %in% c("LAT", "Cohabiting", "Married")) |> 
   bind_rows(single_coef) |> 
@@ -233,8 +233,8 @@ sta_twfe_coef_plot <- ggplot(coef_data,
        title = "Effect of partnership status on life satisfaction by partnership type (relative to single)") +
   scale_color_manual(name = "",
                      values = c("#c00000", "#5488be"),
-                     labels = c("Female", "Male"),
-                     breaks = c("female", "male")) +
+                     labels = c("Women", "Men"),
+                     breaks = c("women", "men")) +
   theme(legend.position = "bottom",
         legend.title = element_blank(),
         plot.title = element_text(size = 14, face = "bold"),
