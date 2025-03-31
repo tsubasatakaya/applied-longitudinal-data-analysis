@@ -46,7 +46,9 @@ pooled_ols_female_rest <- lm(formula,
                              data = data_rest |> filter(sex == "Female"))
 
 
-# Create results table
+################################################
+# Summary table
+################################################
 modelsummary(list("(1)" = pooled_ols_male_full,
                   "(2)" = pooled_ols_female_full,
                   "(3)" = pooled_ols_male_rest,
@@ -135,33 +137,48 @@ for (i in seq_along(gender_tag)) {
   static_twfe_all[[paste0("(", i, ")")]] <- twfe
 }
 
+# Restricted sample
+formula <- as.formula(
+  paste0("life_sat ~ ", "partnership +", paste0(controls[!controls %in% c("has_kid", "emp")], 
+                                                collapse = "+"))
+)
+static_twfe_all[["(9)"]] <- plm(formula,
+                                data = data_rest |>  filter(sex == "Male"),
+                                index = c("id", "wave"),
+                                model = "within",
+                                effect = "twoways")
+static_twfe_all[["(10)"]] <- plm(formula,
+                                 data = data_rest |>  filter(sex == "Female"),
+                                 index = c("id", "wave"),
+                                 model = "within",
+                                 effect = "twoways")
+
 
 ################################################
 # Summary table
 ################################################
-# Create results table
 modelsummary(static_twfe_all, 
              fmt = 2,
              coef_map = cm, gof_map = gm,
              output = "gt") |> 
   tab_spanner(
     label = "Male",
-    columns = c(2, 4),
+    columns = seq(2, 10, 2),
     gather = FALSE
   ) |> 
   tab_spanner(
     label = "Female",
-    columns = c(3, 5),
+    columns = seq(3, 11, 2),
     gather = FALSE
   ) |> 
   tab_spanner(
     label = "Full sample",
-    columns = 2:3
+    columns = 2:9
   ) |> 
   tab_spanner(
     label = "Restricted sample",
-    columns = 4:5
-  ) |> 
+    columns = 10:11
+  ) |>
   tab_row_group(
     label = "Partnership type (Ref: single)",
     rows = 1:6
@@ -183,26 +200,8 @@ modelsummary(static_twfe_all,
                              "Employment status (Ref: not working)",
                              "Continuous scale")) |> 
   tab_options(
-    table.width = pct(60)
+    table.width = pct(80)
   )
-
-
-twfe_formula <- as.formula(
-  paste0("life_sat ~ ", "partnership +", paste0(controls[!controls %in% c("depression")], 
-                                                collapse = "+"))
-)
-static_twfe_male <- plm(twfe_formula, 
-                        data = data_full |> filter(sex == "Male"),
-                        index = c("id", "wave"),
-                        model = "within",
-                        effect = "twoways")
-static_twfe_female <- plm(twfe_formula,
-                          data = data_full |> filter(sex == "Female"),
-                          index = c("id", "wave"),
-                          model = "within",
-                          effect = "twoways")  
-modelsummary(list(static_twfe_male, static_twfe_female),
-             coef_map = cm, gof_map = gm, fmt = 2)
 
 ################################################
 # Plot coefficients
